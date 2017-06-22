@@ -10,6 +10,7 @@ var dom;
 var sun;
 var ground;
 var orbitControl;
+var rollingGroundSphere;
 
 function init() {
 	// set up the scene
@@ -26,12 +27,14 @@ function createScene(){
     scene.fog = new THREE.FogExp2( 0xccffcc, 0.06 );
     camera = new THREE.PerspectiveCamera( 60, sceneWidth / sceneHeight, 0.1, 1000 );//perspective camera
     renderer = new THREE.WebGLRenderer({alpha:true});//renderer with transparent backdrop
+    renderer.setClearColor(0xccffcc, 1); 
     renderer.shadowMap.enabled = true;//enable shadow
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setSize( sceneWidth, sceneHeight );
     dom = document.getElementById('TutContainer');
 	dom.appendChild(renderer.domElement);
 	
+	/*
 	//add items to scene
 	var numTrees=50;
 	var newTree;
@@ -41,13 +44,9 @@ function createScene(){
 		newTree.rotation.z=(Math.random()*(2*Math.PI/10))+-Math.PI/10;
 		scene.add(newTree);
 	}
-	var planeGeometry = new THREE.PlaneGeometry( 5, 1000, 4, 4 );
-	var planeMaterial = new THREE.MeshStandardMaterial( { color: 0x00ff00 } )
-	ground = new THREE.Mesh( planeGeometry, planeMaterial );
-	ground.receiveShadow = true;
-	ground.castShadow=false;
-	ground.rotation.x=-Math.PI/2;
-	scene.add( ground );
+	addGround();*/
+	
+	addWorld();
 
 	camera.position.z = 4;
 	camera.position.y = 1;
@@ -72,6 +71,57 @@ function createScene(){
 	//scene.add( helper );// enable to see the light cone
 	
 	window.addEventListener('resize', onWindowResize, false);//resize callback
+}
+function addWorld(){
+	var sides=30;
+	var tiers=30;
+	var sphereGeometry = new THREE.SphereGeometry( 2, sides,tiers);
+	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xff0000 ,shading:THREE.FlatShading} )
+	
+	var vertexIndex;
+	var vertexVector= new THREE.Vector3();
+	var nextVertexVector= new THREE.Vector3();
+	var firstVertexVector= new THREE.Vector3();
+	var offset= new THREE.Vector3();
+	var currentTier=1;
+	var lerpValue=0.5;
+	var heightValue;
+	var maxHeight=0.07;
+	for(var j=1;j<tiers-2;j++){
+		currentTier=j;
+		for(var i=0;i<sides;i++){
+			vertexIndex=(currentTier*sides)+1;
+			vertexVector=sphereGeometry.vertices[i+vertexIndex].clone();
+			if(j%2!==0){
+				if(i==0){
+					firstVertexVector=vertexVector.clone();
+				}
+				nextVertexVector=sphereGeometry.vertices[i+vertexIndex+1].clone();
+				if(i==sides-1){
+					nextVertexVector=firstVertexVector;
+				}
+				lerpValue=(Math.random()*(0.75-0.25))+0.25;
+				vertexVector.lerp(nextVertexVector,lerpValue);
+			}
+			heightValue=(Math.random()*maxHeight)-(maxHeight/2);
+			offset=vertexVector.clone().normalize().multiplyScalar(heightValue);
+			sphereGeometry.vertices[i+vertexIndex]=(vertexVector.add(offset));
+		}
+	}
+	rollingGroundSphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
+	rollingGroundSphere.receiveShadow = true;
+	rollingGroundSphere.castShadow=false;
+	rollingGroundSphere.rotation.z=-Math.PI/2;
+	scene.add( rollingGroundSphere );
+}
+function addGround(){
+	var planeGeometry = new THREE.PlaneGeometry( 5, 1000, 4, 4 );
+	var planeMaterial = new THREE.MeshStandardMaterial( { color: 0x00ff00 } )
+	ground = new THREE.Mesh( planeGeometry, planeMaterial );
+	ground.receiveShadow = true;
+	ground.castShadow=false;
+	ground.rotation.x=-Math.PI/2;
+	scene.add( ground );
 }
 function createTree(){
 	var sides=8;
@@ -153,6 +203,7 @@ function tightenTree(vertices,sides,currentTier){
 
 function update(){
     //animate
+    rollingGroundSphere.rotation.x += 0.01;
     render();
 	requestAnimationFrame(update);//request next update
 }
