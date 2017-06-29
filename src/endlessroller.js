@@ -11,6 +11,16 @@ var sun;
 var ground;
 var orbitControl;
 var rollingGroundSphere;
+var heroSphere;
+var rollingSpeed=0.006;
+var heroRollingSpeed;
+var worldRadius=26;
+var heroRadius=0.2;
+var sphericalHelper;
+var pathAngleValues;
+var heroBaseY=1.8;
+var bounceValue=0.1;
+var gravity=0.005;
 
 function init() {
 	// set up the scene
@@ -21,35 +31,30 @@ function init() {
 }
 
 function createScene(){
+	heroRollingSpeed=(rollingSpeed*worldRadius/heroRadius)/5;
+	sphericalHelper = new THREE.Spherical();
+	pathAngleValues=[1.52,1.57,1.62];
     sceneWidth=window.innerWidth;
     sceneHeight=window.innerHeight;
     scene = new THREE.Scene();//the 3d scene
-    scene.fog = new THREE.FogExp2( 0xccffcc, 0.06 );
+    scene.fog = new THREE.FogExp2( 0xf0fff0, 0.14 );
     camera = new THREE.PerspectiveCamera( 60, sceneWidth / sceneHeight, 0.1, 1000 );//perspective camera
     renderer = new THREE.WebGLRenderer({alpha:true});//renderer with transparent backdrop
-    renderer.setClearColor(0xccffcc, 1); 
+    renderer.setClearColor(0xfffafa, 1); 
     renderer.shadowMap.enabled = true;//enable shadow
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setSize( sceneWidth, sceneHeight );
     dom = document.getElementById('TutContainer');
 	dom.appendChild(renderer.domElement);
 	
-	
-	//add items to scene
-	var numTrees=10;
-	var newTree;
-	for(var i=0;i<numTrees;i++){
-		newTree=createTree();
-		newTree.position.z=i*-2;
-		newTree.rotation.z=(Math.random()*(2*Math.PI/10))+-Math.PI/10;
-		scene.add(newTree);
-	}
-	addGround();
-	
 	addWorld();
-
-	camera.position.z = 4;
-	camera.position.y = 1;
+	addHero();
+	addTree(true,0);
+	addTree(true,1);
+	addTree(true,2);
+	
+	camera.position.z = 6.5;
+	camera.position.y = 3.5;
 	
 	sun = new THREE.DirectionalLight( 0xffffff, 1);
 	sun.position.set( 0,4,2 );
@@ -65,18 +70,32 @@ function createScene(){
 	orbitControl.addEventListener( 'change', render );
 	//orbitControl.enableDamping = true;
 	//orbitControl.dampingFactor = 0.8;
+	orbitControl.noKeys = true;
+	orbitControl.noPan = true;
 	orbitControl.enableZoom = false;
-	
-	//var helper = new THREE.CameraHelper( sun.shadow.camera );
-	//scene.add( helper );// enable to see the light cone
+	orbitControl.minPolarAngle = 1;
+	orbitControl.maxPolarAngle = 1;
+	orbitControl.minAzimuthAngle = -0.2;
+	orbitControl.maxAzimuthAngle = 0.2;
 	
 	window.addEventListener('resize', onWindowResize, false);//resize callback
 }
+function addHero(){
+	var sphereGeometry = new THREE.DodecahedronGeometry( heroRadius, 1);
+	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xe5f2f3 ,shading:THREE.FlatShading} )
+	
+	heroSphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
+	heroSphere.receiveShadow = true;
+	heroSphere.castShadow=true;
+	scene.add( heroSphere );
+	heroSphere.position.y=heroBaseY;
+	heroSphere.position.z=4.8;
+}
 function addWorld(){
-	var sides=30;
-	var tiers=30;
-	var sphereGeometry = new THREE.SphereGeometry( 2, sides,tiers);
-	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xff0000 ,shading:THREE.FlatShading} )
+	var sides=40;
+	var tiers=40;
+	var sphereGeometry = new THREE.SphereGeometry( worldRadius, sides,tiers);
+	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xfffafa ,shading:THREE.FlatShading} )
 	
 	var vertexIndex;
 	var vertexVector= new THREE.Vector3();
@@ -113,15 +132,19 @@ function addWorld(){
 	rollingGroundSphere.castShadow=false;
 	rollingGroundSphere.rotation.z=-Math.PI/2;
 	scene.add( rollingGroundSphere );
+	rollingGroundSphere.position.y=-24;
+	rollingGroundSphere.position.z=2;
 }
-function addGround(){
-	var planeGeometry = new THREE.PlaneGeometry( 5, 1000, 4, 4 );
-	var planeMaterial = new THREE.MeshStandardMaterial( { color: 0x00ff00 } )
-	ground = new THREE.Mesh( planeGeometry, planeMaterial );
-	ground.receiveShadow = true;
-	ground.castShadow=false;
-	ground.rotation.x=-Math.PI/2;
-	scene.add( ground );
+function addTree(inPath, row){
+	var newTree=createTree();
+	newTree.rotation.x=(Math.random()*(2*Math.PI/10))+-Math.PI/10;
+	newTree.rotation.z=-Math.PI/2;
+	newTree.rotation.y=-Math.PI/2;
+	if(inPath){
+		sphericalHelper.set( worldRadius-0.3, pathAngleValues[row], 0 );
+	}
+	newTree.position.setFromSpherical( sphericalHelper );
+	rollingGroundSphere.add(newTree);
 }
 function createTree(){
 	var sides=8;
@@ -203,7 +226,13 @@ function tightenTree(vertices,sides,currentTier){
 
 function update(){
     //animate
-    rollingGroundSphere.rotation.x += 0.01;
+    rollingGroundSphere.rotation.x += rollingSpeed;
+    heroSphere.rotation.x -= heroRollingSpeed;
+    if(heroSphere.position.y<=heroBaseY){
+    	bounceValue=(Math.random()*0.04)+0.005;
+    }
+    heroSphere.position.y+=bounceValue;
+    bounceValue-=gravity;
     render();
 	requestAnimationFrame(update);//request next update
 }
