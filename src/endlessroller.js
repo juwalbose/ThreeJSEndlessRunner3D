@@ -49,23 +49,12 @@ function createScene(){
 	
 	addWorld();
 	addHero();
-	addTree(true,0);
-	addTree(true,1);
-	addTree(true,2);
+	addWorldTrees();
+	addPathTrees();
+	addLight();
 	
 	camera.position.z = 6.5;
 	camera.position.y = 3.5;
-	
-	sun = new THREE.DirectionalLight( 0xffffff, 1);
-	sun.position.set( 0,4,2 );
-	sun.castShadow = true;
-	scene.add(sun);
-	//Set up shadow properties for the sun light
-	sun.shadow.mapSize.width = 256;
-	sun.shadow.mapSize.height = 256;
-	sun.shadow.camera.near = 0.5;
-	sun.shadow.camera.far = 50 ;
-	
 	orbitControl = new THREE.OrbitControls( camera, renderer.domElement );//helper to rotate around in scene
 	orbitControl.addEventListener( 'change', render );
 	//orbitControl.enableDamping = true;
@@ -73,8 +62,8 @@ function createScene(){
 	orbitControl.noKeys = true;
 	orbitControl.noPan = true;
 	orbitControl.enableZoom = false;
-	orbitControl.minPolarAngle = 1;
-	orbitControl.maxPolarAngle = 1;
+	orbitControl.minPolarAngle = 1.1;
+	orbitControl.maxPolarAngle = 1.1;
 	orbitControl.minAzimuthAngle = -0.2;
 	orbitControl.maxAzimuthAngle = 0.2;
 	
@@ -82,7 +71,7 @@ function createScene(){
 }
 function addHero(){
 	var sphereGeometry = new THREE.DodecahedronGeometry( heroRadius, 1);
-	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xe5f2f3 ,shading:THREE.FlatShading} )
+	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xe5f2f2 ,shading:THREE.FlatShading} )
 	
 	heroSphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
 	heroSphere.receiveShadow = true;
@@ -135,15 +124,51 @@ function addWorld(){
 	rollingGroundSphere.position.y=-24;
 	rollingGroundSphere.position.z=2;
 }
-function addTree(inPath, row){
+function addLight(){
+	var hemisphereLight = new THREE.HemisphereLight(0xfffafa,0x000000, .9)
+	scene.add(hemisphereLight);
+	sun = new THREE.DirectionalLight( 0xcdc1c5, 0.9);
+	sun.position.set( 12,6,-7 );
+	sun.castShadow = true;
+	scene.add(sun);
+	//Set up shadow properties for the sun light
+	sun.shadow.mapSize.width = 256;
+	sun.shadow.mapSize.height = 256;
+	sun.shadow.camera.near = 0.5;
+	sun.shadow.camera.far = 50 ;
+}
+function addPathTrees(){
+	addTree(true,0);
+	addTree(true,1);
+	addTree(true,2);
+}
+function addWorldTrees(){
+	var numTrees=36;
+	var gap=6.28/36;
+	for(var i=0;i<numTrees;i++){
+		addTree(false,i*gap, true);
+		addTree(false,i*gap, false);
+	}
+}
+function addTree(inPath, row, isLeft){
 	var newTree=createTree();
-	newTree.rotation.x=(Math.random()*(2*Math.PI/10))+-Math.PI/10;
-	newTree.rotation.z=-Math.PI/2;
-	newTree.rotation.y=-Math.PI/2;
 	if(inPath){
 		sphericalHelper.set( worldRadius-0.3, pathAngleValues[row], 0 );
+	}else{
+		var forestAreaAngle=0;//[1.52,1.57,1.62];
+		if(isLeft){
+			forestAreaAngle=1.68+Math.random()*0.1;
+		}else{
+			forestAreaAngle=1.46-Math.random()*0.1;
+		}
+		sphericalHelper.set( worldRadius-0.3, forestAreaAngle, row );
 	}
 	newTree.position.setFromSpherical( sphericalHelper );
+	var rollingGroundVector=rollingGroundSphere.position.clone().normalize();
+	var treeVector=newTree.position.clone().normalize();
+	newTree.quaternion.setFromUnitVectors(treeVector,rollingGroundVector);
+	newTree.rotation.x+=(Math.random()*(2*Math.PI/10))+-Math.PI/10;
+	
 	rollingGroundSphere.add(newTree);
 }
 function createTree(){
