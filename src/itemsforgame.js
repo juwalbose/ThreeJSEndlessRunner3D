@@ -11,6 +11,11 @@ var sun;
 var ground;
 var orbitControl;
 var rollingGroundSphere;
+var particleGeometry;
+var particleCount=20;
+var gravity =1.06;
+var particles;
+var clock;
 
 function init() {
 	// set up the scene
@@ -21,6 +26,8 @@ function init() {
 }
 
 function createScene(){
+	clock=new THREE.Clock();
+	clock.start();
     sceneWidth=window.innerWidth;
     sceneHeight=window.innerHeight;
     scene = new THREE.Scene();//the 3d scene
@@ -44,9 +51,10 @@ function createScene(){
 		newTree.rotation.z=(Math.random()*(2*Math.PI/10))+-Math.PI/10;
 		scene.add(newTree);
 	}
-	addGround();
+	//addGround();
 	
-	addWorld();
+	//addWorld();
+	addExplosion();
 
 	camera.position.z = 4;
 	camera.position.y = 1;
@@ -71,6 +79,25 @@ function createScene(){
 	//scene.add( helper );// enable to see the light cone
 	
 	window.addEventListener('resize', onWindowResize, false);//resize callback
+}
+function addExplosion(){
+	particleGeometry = new THREE.Geometry();
+	for (var i = 0; i < particleCount; i ++ ) {
+		var vertex = new THREE.Vector3();
+		particleGeometry.vertices.push( vertex );
+	}
+	var pMaterial = new THREE.ParticleBasicMaterial({
+	  color: 0xFFFaFa,
+	  size: 0.25,
+	  blending: THREE.AdditiveBlending,
+	  transparent: true
+	});
+	particles = new THREE.Points( particleGeometry, pMaterial );
+	//particles.rotation.x = Math.random() * 6;
+	//particles.rotation.y = Math.random() * 6;
+	//particles.rotation.z = Math.random() * 6;
+	scene.add( particles );
+	particles.visible=false;
 }
 function addWorld(){
 	var sides=30;
@@ -200,10 +227,31 @@ function tightenTree(vertices,sides,currentTier){
 		vertices[i+vertexIndex].sub(offset);
 	}
 }
-
+function explode(){
+	for (var i = 0; i < particleCount; i ++ ) {
+		var vertex = new THREE.Vector3();
+		vertex.x = -0.2+Math.random() * 0.4;
+		vertex.y = -0.2+Math.random() * 0.4 ;
+		vertex.z = -0.2+Math.random() * 0.4;
+		particleGeometry.vertices[i]=vertex;
+	}
+	gravity=1.07;
+	particles.visible=true;
+}
 function update(){
     //animate
-    rollingGroundSphere.rotation.x += 0.01;
+    if(clock.getElapsedTime()>3){
+    	clock.start();
+    	explode();
+    }
+	for (var i = 0; i < particleCount; i ++ ) {
+		particleGeometry.vertices[i].multiplyScalar(gravity);
+	}
+	if(gravity>1.005){
+		gravity-=0.001;
+	}
+	particleGeometry.verticesNeedUpdate = true;
+    //rollingGroundSphere.rotation.x += 0.01;
     render();
 	requestAnimationFrame(update);//request next update
 }
