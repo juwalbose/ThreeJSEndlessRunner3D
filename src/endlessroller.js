@@ -1,5 +1,6 @@
-/*global THREE*/
-/*global Stats*/
+import * as THREE from 'three';
+import Stats from 'stats.js';
+import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 window.addEventListener('load', init, false);
 
 var sceneWidth;
@@ -81,12 +82,12 @@ function createScene(){
 	
 	camera.position.z = 6.5;
 	camera.position.y = 3.5;
-	orbitControl = new THREE.OrbitControls( camera, renderer.domElement );//helper to rotate around in scene
+	orbitControl = new OrbitControls( camera, renderer.domElement );//helper to rotate around in scene
 	orbitControl.addEventListener( 'change', render );
 	//orbitControl.enableDamping = true;
 	//orbitControl.dampingFactor = 0.8;
-	orbitControl.noKeys = true;
-	orbitControl.noPan = true;
+	//orbitControl.noKeys = true;
+	//orbitControl.noPan = true;
 	orbitControl.enableZoom = false;
 	orbitControl.minPolarAngle = 1.1;
 	orbitControl.maxPolarAngle = 1.1;
@@ -100,8 +101,9 @@ function createScene(){
 	scoreText = document.createElement('div');
 	scoreText.style.position = 'absolute';
 	//text2.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
-	scoreText.style.width = 100;
-	scoreText.style.height = 100;
+	scoreText.style.width = '100';
+	scoreText.style.height = '100';
+	
 	//scoreText.style.backgroundColor = "blue";
 	scoreText.innerHTML = "0";
 	scoreText.style.top = 10 + 'px';
@@ -114,9 +116,8 @@ function addExplosion(){
 		var vertex = new THREE.Vector3();
 		particleGeometry.vertices.push( vertex );
 	}
-	var pMaterial = new THREE.ParticleBasicMaterial({
-	  color: 0xfffafa,
-	  size: 0.2
+	
+	var pMaterial = new THREE.PointsMaterial({ color: 0xfffafa, size: 0.2
 	});
 	particles = new THREE.Points( particleGeometry, pMaterial );
 	scene.add( particles );
@@ -164,7 +165,7 @@ function handleKeyDown(keyEvent){
 }
 function addHero(){
 	var sphereGeometry = new THREE.DodecahedronGeometry( heroRadius, 1);
-	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xe5f2f2 ,shading:THREE.FlatShading} )
+	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xe5f2f2 } )
 	jumping=false;
 	heroSphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
 	heroSphere.receiveShadow = true;
@@ -179,7 +180,7 @@ function addWorld(){
 	var sides=40;
 	var tiers=40;
 	var sphereGeometry = new THREE.SphereGeometry( worldRadius, sides,tiers);
-	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xfffafa ,shading:THREE.FlatShading} )
+	var sphereMaterial = new THREE.MeshStandardMaterial( { color: 0xfffafa } )
 	
 	var vertexIndex;
 	var vertexVector= new THREE.Vector3();
@@ -285,7 +286,7 @@ function createTree(){
 	var midPointVector= new THREE.Vector3();
 	var vertexVector= new THREE.Vector3();
 	var treeGeometry = new THREE.ConeGeometry( 0.5, 1, sides, tiers);
-	var treeMaterial = new THREE.MeshStandardMaterial( { color: 0x33ff33,shading:THREE.FlatShading  } );
+	var treeMaterial = new THREE.MeshStandardMaterial( { color: 0x33ff33  } );
 	var offset;
 	midPointVector=treeGeometry.vertices[0].clone();
 	var currentTier=0;
@@ -302,7 +303,7 @@ function createTree(){
 	treeTop.position.y=0.9;
 	treeTop.rotation.y=(Math.random()*(Math.PI));
 	var treeTrunkGeometry = new THREE.CylinderGeometry( 0.1, 0.1,0.5);
-	var trunkMaterial = new THREE.MeshStandardMaterial( { color: 0x886633,shading:THREE.FlatShading  } );
+	var trunkMaterial = new THREE.MeshStandardMaterial( { color: 0x886633 } );
 	var treeTrunk = new THREE.Mesh( treeTrunkGeometry, trunkMaterial );
 	treeTrunk.position.y=0.25;
 	var tree =new THREE.Object3D();
@@ -366,7 +367,7 @@ function update(){
     	bounceValue=(Math.random()*0.04)+0.005;
     }
     heroSphere.position.y+=bounceValue;
-    heroSphere.position.x=THREE.Math.lerp(heroSphere.position.x,currentLane, 2*clock.getDelta());//clock.getElapsedTime());
+    heroSphere.position.x=THREE.MathUtils.lerp(heroSphere.position.x,currentLane, 2*clock.getDelta());//clock.getElapsedTime());
     bounceValue-=gravity;
     if(clock.getElapsedTime()>treeReleaseInterval){
     	clock.start();
